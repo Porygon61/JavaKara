@@ -1,0 +1,61 @@
+{
+	"worlds": [
+		{
+			"project": 1,
+			"name": "maze",
+			"positions": {
+				"kara": {
+					"x": 1,
+					"y": 1
+				},
+				"tree": {
+
+				},
+				"leaf": {
+					
+				},
+				"mushroom": {
+
+				}
+			}
+		},
+		{
+			"project": 2,
+			"name": "collect all leaf",
+			"positions": {
+				"kara": {
+					"x": 1,
+					"y": 1
+				},
+				"tree": {
+					
+				},
+				"leaf": {
+					
+				},
+				"mushroom": {
+
+				}
+			}
+		},
+		{
+			"project": 3,
+			"name": "collect leaf if tree is left and right",
+			"positions": {
+				"kara": {
+					"x": 1,
+					"y": 1
+				},
+				"tree": {
+					
+				},
+				"leaf": {
+					
+				},
+				"mushroom": {
+
+				}
+			}
+		}
+	]
+}
