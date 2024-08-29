@@ -9,6 +9,8 @@ import java.util.*;
 
 public class Main extends JavaKaraProgram {
 
+    private JSONObject worldSettings;
+
     public void myProgram() {
         loadWorldSettings();
         runProgram();
@@ -127,7 +129,7 @@ public class Main extends JavaKaraProgram {
     private void loadWorldSettings() {
         try {
             String content = new String(Files.readAllBytes(Paths.get("worlds.json")));
-            JSONObject worldSettings = new JSONObject(content);
+            worldSettings = new JSONObject(content);
         } catch (Exception e) {
             tools.showMessage("Error loading world settings: " + e.getMessage());
         }
