@@ -1,15 +1,11 @@
 package src;
 
 import javakara.JavaKaraProgram;
-import org.json.JSONObject;
-import org.json.JSONArray;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.*;
 
 public class Main extends JavaKaraProgram {
 
-    private JSONObject worldSettings;
+    private Map<String, WorldSettings> worldSettingsMap;
 
     public void myProgram() {
         loadWorldSettings();
@@ -127,51 +123,56 @@ public class Main extends JavaKaraProgram {
     }
 
     private void loadWorldSettings() {
-        try {
-            String content = new String(Files.readAllBytes(Paths.get("worlds.json")));
-            worldSettings = new JSONObject(content);
-        } catch (Exception e) {
-            tools.showMessage("Error loading world settings: " + e.getMessage());
-        }
+        worldSettingsMap = new HashMap<>();
+
+        // Maze world settings
+        WorldSettings mazeSettings = new WorldSettings();
+        mazeSettings.setKaraPosition(0, 0);
+        mazeSettings.addTree(1, 1);
+        mazeSettings.addTree(1, 2);
+        // Add more trees, leaves, mushrooms as needed
+        worldSettingsMap.put("maze", mazeSettings);
+
+        // Collect All Leaf world settings
+        WorldSettings collectAllLeafSettings = new WorldSettings();
+        collectAllLeafSettings.setKaraPosition(0, 0);
+        collectAllLeafSettings.addLeaf(2, 2);
+        // Add more trees, leaves, mushrooms as needed
+        worldSettingsMap.put("collect all leaf", collectAllLeafSettings);
+
+        // Collect Leaf If Tree is Left and Right world settings
+        WorldSettings collectLeafIfTreeLeftRightSettings = new WorldSettings();
+        collectLeafIfTreeLeftRightSettings.setKaraPosition(0, 0);
+        collectLeafIfTreeLeftRightSettings.addTree(1, 0);
+        collectLeafIfTreeLeftRightSettings.addTree(1, 2);
+        // Add more trees, leaves, mushrooms as needed
+        worldSettingsMap.put("collect leaf if tree is left and right", collectLeafIfTreeLeftRightSettings);
     }
 
-    private void setupWorld(JSONObject worldData) {
+    private void setupWorld(WorldSettings worldSettings) {
         // Set Kara's position
-        JSONObject karaPosition = worldData.getJSONObject("kara");
-        kara.setPosition(karaPosition.getInt("x"), karaPosition.getInt("y"));
+        kara.setPosition(worldSettings.getKaraX(), worldSettings.getKaraY());
 
         // Set trees
-        JSONArray trees = worldData.optJSONArray("tree");
-        if (trees != null) {
-            for (int i = 0; i < trees.length(); i++) {
-                JSONObject tree = trees.getJSONObject(i);
-                world.setTree(tree.getInt("x"), tree.getInt("y"), true);
-            }
+        for (int[] treePos : worldSettings.getTrees()) {
+            world.setTree(treePos[0], treePos[1], true);
         }
 
         // Set leaves
-        JSONArray leaves = worldData.optJSONArray("leaf");
-        if (leaves != null) {
-            for (int i = 0; i < leaves.length(); i++) {
-                JSONObject leaf = leaves.getJSONObject(i);
-                world.setLeaf(leaf.getInt("x"), leaf.getInt("y"), true);
-            }
+        for (int[] leafPos : worldSettings.getLeaves()) {
+            world.setLeaf(leafPos[0], leafPos[1], true);
         }
 
         // Set mushrooms
-        JSONArray mushrooms = worldData.optJSONArray("mushroom");
-        if (mushrooms != null) {
-            for (int i = 0; i < mushrooms.length(); i++) {
-                JSONObject mushroom = mushrooms.getJSONObject(i);
-                world.setMushroom(mushroom.getInt("x"), mushroom.getInt("y"), true);
-            }
+        for (int[] mushroomPos : worldSettings.getMushrooms()) {
+            world.setMushroom(mushroomPos[0], mushroomPos[1], true);
         }
     }
 
     public void Project_maze() {
-        JSONObject mazeWorld = getWorldByProjectName("maze");
+        WorldSettings mazeWorld = worldSettingsMap.get("maze");
         if (mazeWorld != null) {
-            setupWorld(mazeWorld.getJSONObject("positions"));
+            setupWorld(mazeWorld);
             // Implement additional logic for the maze project here
         } else {
             tools.showMessage("Maze project world settings not found!");
@@ -179,9 +180,9 @@ public class Main extends JavaKaraProgram {
     }
 
     public void Project_collectAllLeaf() {
-        JSONObject collectAllLeafWorld = getWorldByProjectName("collect all leaf");
+        WorldSettings collectAllLeafWorld = worldSettingsMap.get("collect all leaf");
         if (collectAllLeafWorld != null) {
-            setupWorld(collectAllLeafWorld.getJSONObject("positions"));
+            setupWorld(collectAllLeafWorld);
             // Implement additional logic for collecting all leaves here
         } else {
             tools.showMessage("Collect All Leaf project world settings not found!");
@@ -189,27 +190,68 @@ public class Main extends JavaKaraProgram {
     }
 
     public void Project_collectLeafIfTreeLeftRight() {
-        JSONObject collectLeafIfTreeLeftRightWorld = getWorldByProjectName("collect leaf if tree is left and right");
+        WorldSettings collectLeafIfTreeLeftRightWorld = worldSettingsMap.get("collect leaf if tree is left and right");
         if (collectLeafIfTreeLeftRightWorld != null) {
-            setupWorld(collectLeafIfTreeLeftRightWorld.getJSONObject("positions"));
+            setupWorld(collectLeafIfTreeLeftRightWorld);
             // Implement additional logic for the specific leaf collection here
         } else {
             tools.showMessage("Collect Leaf If Tree is Left and Right project world settings not found!");
         }
     }
 
-    private JSONObject getWorldByProjectName(String projectName) {
-        JSONArray worlds = worldSettings.getJSONArray("worlds");
-        for (int i = 0; i < worlds.length(); i++) {
-            JSONObject world = worlds.getJSONObject(i);
-            if (world.getString("name").equalsIgnoreCase(projectName)) {
-                return world;
-            }
-        }
-        return null;
+    public void EditProjects() {
+        // Add logic for editing projects if needed
+    }
+}
+
+// Custom class to hold world settings
+class WorldSettings {
+    private int karaX;
+    private int karaY;
+    private List<int[]> trees;
+    private List<int[]> leaves;
+    private List<int[]> mushrooms;
+
+    public WorldSettings() {
+        trees = new ArrayList<>();
+        leaves = new ArrayList<>();
+        mushrooms = new ArrayList<>();
     }
 
-    public void EditProjects() {
+    public void setKaraPosition(int x, int y) {
+        this.karaX = x;
+        this.karaY = y;
+    }
 
+    public int getKaraX() {
+        return karaX;
+    }
+
+    public int getKaraY() {
+        return karaY;
+    }
+
+    public void addTree(int x, int y) {
+        trees.add(new int[] { x, y });
+    }
+
+    public void addLeaf(int x, int y) {
+        leaves.add(new int[] { x, y });
+    }
+
+    public void addMushroom(int x, int y) {
+        mushrooms.add(new int[] { x, y });
+    }
+
+    public List<int[]> getTrees() {
+        return trees;
+    }
+
+    public List<int[]> getLeaves() {
+        return leaves;
+    }
+
+    public List<int[]> getMushrooms() {
+        return mushrooms;
     }
 }
