@@ -1,18 +1,11 @@
 package src;
 
 import javakara.JavaKaraProgram;
-import java.util.*;
+import java.util.Arrays;
 
 public class Main extends JavaKaraProgram {
 
-    private Map<String, WorldSettings> worldSettingsMap;
-
     public void myProgram() {
-        loadWorldSettings();
-        runProgram();
-    }
-
-    public void runProgram() {
         setWorldSize();
         accessWorlds();
     }
@@ -61,11 +54,8 @@ public class Main extends JavaKaraProgram {
 
     public void accessWorlds() {
         world.clearAll();
-        tools.checkState();
 
-        String project = "None";
-        String chosenProject = chooseProject(project);
-        project = chosenProject;
+        String chosenProject = chooseProject();
 
         switch (chosenProject) {
             case "Maze":
@@ -83,26 +73,24 @@ public class Main extends JavaKaraProgram {
         }
     }
 
-    public String chooseProject(String currentProject) {
-        String chosenProject = currentProject;
+    public String chooseProject() {
+        String[] ProjectsArray = {
+                "Maze",
+                "Collect All Leaf",
+                "Collect Leaf If Tree is Left and Right"
+        };
+        String projectsList = String.join("\n", ProjectsArray);
 
         boolean done = false;
+        String chosenProject = null;
         while (!done) {
             try {
-                String[] ProjectsArray = {
-                        "Maze", "Collect All Leaf", "Collect Leaf If Tree is Left and Right"
-                };
-                String projectsList = String.join("\n", ProjectsArray);
-
                 chosenProject = tools.stringInput(
-                        "Current Project: " + currentProject + "\n" +
-                                "Projects:\n" + projectsList + "\n" +
-                                "Enter project name to select, or leave empty to keep current.")
+                        "Projects:\n" + projectsList + "\n" +
+                                "Enter Project name to select:")
                         .trim();
 
-                if (chosenProject.isEmpty()) {
-                    chosenProject = currentProject; // Keep current if empty input
-                } else if (!Arrays.asList(ProjectsArray).contains(chosenProject)) {
+                if (!Arrays.asList(ProjectsArray).contains(chosenProject)) {
                     throw new Exception("Invalid project selection");
                 }
 
@@ -112,8 +100,9 @@ public class Main extends JavaKaraProgram {
                 if (e.getMessage().contains("Invalid project selection")) {
                     tools.showMessage("Please select a valid project from the list.");
                 } else if (e instanceof NullPointerException) {
-                    EditProjects();
+                    tools.showMessage("No project selected. Exiting.");
                     done = true;
+                    chosenProject = ""; // Exit without selecting a project
                 } else {
                     tools.showMessage("Unexpected error: " + e.getMessage());
                 }
@@ -122,136 +111,95 @@ public class Main extends JavaKaraProgram {
         return chosenProject;
     }
 
-    private void loadWorldSettings() {
-        worldSettingsMap = new HashMap<>();
-
-        // Maze world settings
-        WorldSettings mazeSettings = new WorldSettings();
-        mazeSettings.setKaraPosition(0, 0);
-        mazeSettings.addTree(1, 1);
-        mazeSettings.addTree(1, 2);
-        // Add more trees, leaves, mushrooms as needed
-        worldSettingsMap.put("maze", mazeSettings);
-
-        // Collect All Leaf world settings
-        WorldSettings collectAllLeafSettings = new WorldSettings();
-        collectAllLeafSettings.setKaraPosition(0, 0);
-        collectAllLeafSettings.addLeaf(2, 2);
-        // Add more trees, leaves, mushrooms as needed
-        worldSettingsMap.put("collect all leaf", collectAllLeafSettings);
-
-        // Collect Leaf If Tree is Left and Right world settings
-        WorldSettings collectLeafIfTreeLeftRightSettings = new WorldSettings();
-        collectLeafIfTreeLeftRightSettings.setKaraPosition(0, 0);
-        collectLeafIfTreeLeftRightSettings.addTree(1, 0);
-        collectLeafIfTreeLeftRightSettings.addTree(1, 2);
-        // Add more trees, leaves, mushrooms as needed
-        worldSettingsMap.put("collect leaf if tree is left and right", collectLeafIfTreeLeftRightSettings);
-    }
-
-    private void setupWorld(WorldSettings worldSettings) {
-        // Set Kara's position
-        kara.setPosition(worldSettings.getKaraX(), worldSettings.getKaraY());
-
-        // Set trees
-        for (int[] treePos : worldSettings.getTrees()) {
-            world.setTree(treePos[0], treePos[1], true);
-        }
-
-        // Set leaves
-        for (int[] leafPos : worldSettings.getLeaves()) {
-            world.setLeaf(leafPos[0], leafPos[1], true);
-        }
-
-        // Set mushrooms
-        for (int[] mushroomPos : worldSettings.getMushrooms()) {
-            world.setMushroom(mushroomPos[0], mushroomPos[1], true);
-        }
-    }
-
     public void Project_maze() {
-        WorldSettings mazeWorld = worldSettingsMap.get("maze");
-        if (mazeWorld != null) {
-            setupWorld(mazeWorld);
-            // Implement additional logic for the maze project here
-        } else {
-            tools.showMessage("Maze project world settings not found!");
+        // Manually set up the Maze world
+        kara.setPosition(1, 1);
+
+        for (int i = 0; i < world.getSizeX(); i++) {
+            for (int j = 0; j < world.getSizeY(); j++) {
+                if (world.isEmpty(i, j)) {
+                    int treesAround = countTreesAround(i, j);
+                    int diagonalTreesAround = 0;
+                    for (int x = -1; x <= 1; x++) {
+                        for (int y = -1; y <= 1; y++) {
+                            if (Math.abs(x) == Math.abs(y)) {
+                                int ni = i + x;
+                                int nj = j + y;
+                                if (ni >= 0 && ni < world.getSizeX() && nj >= 0 && nj < world.getSizeY()) {
+                                    if (world.isTree(ni, nj)) {
+                                        diagonalTreesAround++;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if (diagonalTreesAround == 0 || (diagonalTreesAround > 0 && treesAround > 1)) {
+                        if (treesAround <= 2 && tools.random(100) < 50) {
+                            world.setTree(i, j, true);
+                        }
+                    }
+                }
+            }
         }
     }
+
+    // Helper method to count trees around a cell
+    private int countTreesAround(int i, int j) {
+        int count = 0;
+        int diagonalCount = 0;
+        for (int x = -1; x <= 1; x++) {
+            for (int y = -1; y <= 1; y++) {
+                if (x == 0 && y == 0)
+                    continue; // skip current cell
+                int ni = i + x;
+                int nj = j + y;
+                if (ni >= 0 && ni < world.getSizeX() && nj >= 0 && nj < world.getSizeY()) {
+                    if (world.isTree(ni, nj)) {
+                        if (Math.abs(x) == Math.abs(y)) {
+                            diagonalCount++; // increment diagonal count
+                        } else {
+                            count++; // increment direct neighbor count
+                        }
+                    }
+                }
+            }
+        }
+        return count + diagonalCount; // return total count
+    }
+
+    // Tree generation logic
+
+    // Example of setting trees and leaves manually
+    // world.setTree(2, 2, true);
+    // world.setTree(2, 3, true);
+    // world.setLeaf(3, 3, true);
+    // Add more elements to set up the maze as needed
+
+    // Additional logic for the maze project goes here
 
     public void Project_collectAllLeaf() {
-        WorldSettings collectAllLeafWorld = worldSettingsMap.get("collect all leaf");
-        if (collectAllLeafWorld != null) {
-            setupWorld(collectAllLeafWorld);
-            // Implement additional logic for collecting all leaves here
-        } else {
-            tools.showMessage("Collect All Leaf project world settings not found!");
-        }
+        // Manually set up the Collect All Leaf world
+        kara.setPosition(1, 1);
+
+        // Example of setting trees and leaves manually
+        world.setLeaf(2, 2, true);
+        world.setLeaf(3, 3, true);
+        world.setLeaf(4, 4, true);
+        // Add more leaves as needed
+
+        // Additional logic for collecting all leaves goes here
     }
 
     public void Project_collectLeafIfTreeLeftRight() {
-        WorldSettings collectLeafIfTreeLeftRightWorld = worldSettingsMap.get("collect leaf if tree is left and right");
-        if (collectLeafIfTreeLeftRightWorld != null) {
-            setupWorld(collectLeafIfTreeLeftRightWorld);
-            // Implement additional logic for the specific leaf collection here
-        } else {
-            tools.showMessage("Collect Leaf If Tree is Left and Right project world settings not found!");
-        }
-    }
+        // Manually set up the Collect Leaf If Tree is Left and Right world
+        kara.setPosition(1, 1);
 
-    public void EditProjects() {
-        // Add logic for editing projects if needed
-    }
-}
+        // Example of setting trees and leaves manually
+        world.setTree(2, 2, true);
+        world.setTree(2, 4, true);
+        world.setLeaf(2, 3, true);
+        // Add more elements as needed
 
-// Custom class to hold world settings
-class WorldSettings {
-    private int karaX;
-    private int karaY;
-    private List<int[]> trees;
-    private List<int[]> leaves;
-    private List<int[]> mushrooms;
-
-    public WorldSettings() {
-        trees = new ArrayList<>();
-        leaves = new ArrayList<>();
-        mushrooms = new ArrayList<>();
-    }
-
-    public void setKaraPosition(int x, int y) {
-        this.karaX = x;
-        this.karaY = y;
-    }
-
-    public int getKaraX() {
-        return karaX;
-    }
-
-    public int getKaraY() {
-        return karaY;
-    }
-
-    public void addTree(int x, int y) {
-        trees.add(new int[] { x, y });
-    }
-
-    public void addLeaf(int x, int y) {
-        leaves.add(new int[] { x, y });
-    }
-
-    public void addMushroom(int x, int y) {
-        mushrooms.add(new int[] { x, y });
-    }
-
-    public List<int[]> getTrees() {
-        return trees;
-    }
-
-    public List<int[]> getLeaves() {
-        return leaves;
-    }
-
-    public List<int[]> getMushrooms() {
-        return mushrooms;
+        // Additional logic for this specific leaf collection goes here
     }
 }
