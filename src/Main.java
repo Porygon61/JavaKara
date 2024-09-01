@@ -3,95 +3,62 @@ package src;
 import javakara.JavaKaraProgram;
 
 import java.util.Arrays;
+import java.util.TooManyListenersException;
 
 public class Main extends JavaKaraProgram {
 
-    // Main program entry point
     public void myProgram() {
         setWorldSize();
         accessWorlds();
     }
 
-    // Handles setting the world size based on user input
     public void setWorldSize() {
-        int[] currentSize = getCurrentWorldSize();
+        int WorldX = world.getSizeX();
+        int WorldY = world.getSizeY();
+
         boolean done = false;
-
         while (!done) {
-            String input = getWorldSizeInput(currentSize);
-            if (input.isEmpty()) {
+            try {
+                String input = tools.stringInput(
+                        "Current World Size: " + WorldX + "x" + WorldY + "\n" +
+                                "Max: 99x99, Min: 1x1" + "\n" +
+                                "Press OK to leave as is, Abbrechen to reset(9x9)\nOr enter new size (e.g., 9x9)")
+                        .trim();
+
+                if (input.isEmpty()) {
+                    done = true;
+                    continue;
+                }
+
+                String[] WorldSize = input.split("x");
+                int newX = Integer.parseInt(WorldSize[0]);
+                int newY = Integer.parseInt(WorldSize[1]);
+
+                if (newX > 99 || newY > 99 || newX < 1 || newY < 1) {
+                    throw new Exception("Invalid size");
+                }
+
+                world.setSize(newX, newY);
                 done = true;
-                continue;
-            }
-            int[] newSize = parseWorldSizeInput(input);
-            if (newSize != null) {
-                updateWorldSize(newSize);
-                done = true;
+
+            } catch (Exception e) {
+                if (e instanceof NumberFormatException || e.getMessage().contains("Invalid size")) {
+                    tools.showMessage("Please input a valid world size (e.g., '5x5'). Max: 99x99, Min: 1x1.");
+                } else if (e instanceof NullPointerException) {
+                    world.setSize(9, 9);
+                    done = true;
+                } else {
+                    tools.showMessage("Unexpected error: " + e.getMessage());
+                }
             }
         }
     }
 
-    // Returns the current world size as an array
-    private int[] getCurrentWorldSize() {
-        return new int[] { world.getSizeX(), world.getSizeY() };
-    }
-
-    // Retrieves user input for the desired world size
-    private String getWorldSizeInput(int[] currentSize) {
-        return tools.stringInput(
-                "Current World Size: " + currentSize[0] + "x" + currentSize[1] + "\n" +
-                        "Max: 99x99, Min: 1x1" + "\n" +
-                        "Press OK to leave as is, Abbrechen to reset(9x9)\nOr enter new size (e.g., 9x9)")
-                .trim();
-    }
-
-    // Parses the user input and validates the new world size
-    private int[] parseWorldSizeInput(String input) {
-        try {
-            String[] WorldSize = input.split("x");
-            int newX = Integer.parseInt(WorldSize[0]);
-            int newY = Integer.parseInt(WorldSize[1]);
-            if (isValidWorldSize(newX, newY)) {
-                return new int[] { newX, newY };
-            } else {
-                throw new Exception("Invalid size");
-            }
-        } catch (Exception e) {
-            handleSizeInputError(e);
-            return null;
-        }
-    }
-
-    // Checks if the provided world size is within valid limits
-    private boolean isValidWorldSize(int x, int y) {
-        return x >= 1 && x <= 99 && y >= 1 && y <= 99;
-    }
-
-    // Updates the world size with new dimensions
-    private void updateWorldSize(int[] newSize) {
-        world.setSize(newSize[0], newSize[1]);
-    }
-
-    // Handles errors during size input parsing
-    private void handleSizeInputError(Exception e) {
-        if (e instanceof NumberFormatException || e.getMessage().contains("Invalid size")) {
-            tools.showMessage("Please input a valid world size (e.g., '5x5'). Max: 99x99, Min: 1x1.");
-        } else if (e instanceof NullPointerException) {
-            world.setSize(9, 9);
-        } else {
-            tools.showMessage("Unexpected error: " + e.getMessage());
-        }
-    }
-
-    // Clears the world and accesses the selected project
     public void accessWorlds() {
         world.clearAll();
-        String chosenProject = chooseProject();
-        executeProject(chosenProject);
-    }
 
-    // Executes the selected project based on user input
-    private void executeProject(String chosenProject) {
+        String chosenProject = chooseProject();
+
         switch (chosenProject) {
             case "Maze":
                 Project_maze();
@@ -103,12 +70,11 @@ public class Main extends JavaKaraProgram {
                 Project_collectLeafIfTreeLeftRight();
                 break;
             default:
-                // tools.showMessage("No project selected!");
+                // tools.showMessage("No project with such a name has been registered!");
                 break;
         }
     }
 
-    // Presents the list of available projects to the user and returns their choice
     public String chooseProject() {
         String[] ProjectsArray = {
                 "Maze",
@@ -147,215 +113,253 @@ public class Main extends JavaKaraProgram {
         return chosenProject;
     }
 
-    // Generates a maze in the world and places Kara at the starting position
     public void Project_maze() {
-        fillWorldWithTrees();
-        int[] start = getRandomStartPosition();
-        generateMaze(start[0], start[1]);
-        kara.setPosition(start[0], start[1]);
-    }
-
-    // Fills the world entirely with trees
-    private void fillWorldWithTrees() {
         for (int x = 0; x < world.getSizeX(); x++) {
             for (int y = 0; y < world.getSizeY(); y++) {
                 world.setTree(x, y, true);
             }
         }
-    }
 
-    // Returns a random valid starting position within the world
-    private int[] getRandomStartPosition() {
         int startX = tools.random(world.getSizeX() - 1);
         int startY = tools.random(world.getSizeY() - 1);
+
+        int initialStartX = startX;
+        int initialStartY = startY;
+
         world.setTree(startX, startY, false);
-        return new int[] { startX, startY };
+
+        generateMaze(startX, startY);
+
+        kara.setPosition(initialStartX, initialStartY);
     }
 
-    // Recursively generates a maze from the given position
     public void generateMaze(int x, int y) {
         world.setTree(x, y, false);
-        int[][] directions = getRandomizedDirections();
+
+        // Define the possible directions to move (left, top, right, bottom)
+        int[][] directions = {
+                { -2, 0 }, // left
+                { 2, 0 }, // right
+                { 0, -2 }, // top
+                { 0, 2 } // bottom
+        };
+
+        randomizeDirections(directions);
+
         for (int[] dir : directions) {
-            if (canCarve(x, y, dir)) {
-                carvePath(x, y, dir);
-                generateMaze(x + dir[0], y + dir[1]);
+            int newX = x + dir[0];
+            int newY = y + dir[1];
+
+            if (isValidCell(newX, newY)) {
+                int midX = (x + newX) / 2;
+                int midY = (y + newY) / 2;
+
+                if (world.isTree(midX, midY) && world.isTree(newX, newY) && amountOfFreeSpacesAround(newX, newY) == 0) {
+                    world.setTree(midX, midY, false);
+                    generateMaze(newX, newY);
+                }
             }
         }
     }
 
-    // Returns a randomized array of possible movement directions
-    private int[][] getRandomizedDirections() {
-        int[][] directions = {
-                { -2, 0 }, { 2, 0 }, { 0, -2 }, { 0, 2 }
-        };
-        randomizeDirections(directions);
-        return directions;
-    }
-
-    // Determines if the maze can carve a path in the given direction
-    private boolean canCarve(int x, int y, int[] dir) {
-        int newX = x + dir[0];
-        int newY = y + dir[1];
-        return isValidCell(newX, newY) && world.isTree(newX, newY) && amountOfFreeSpacesAround(newX, newY) == 0;
-    }
-
-    // Carves a path in the maze between the current position and the target
-    // position
-    private void carvePath(int x, int y, int[] dir) {
-        int midX = (x + dir[0] + x) / 2;
-        int midY = (y + dir[1] + y) / 2;
-        world.setTree(midX, midY, false);
-    }
-
-    // Randomizes the order of directions using the Fisher-Yates algorithm
     public void randomizeDirections(int[][] directions) {
+        // Shuffle the array of directions using the Fisher-Yates algorithm
         for (int i = directions.length - 1; i > 0; i--) {
-            int j = tools.random(i);
+            int j = tools.random(i); // Get a random index between 0 and i, inclusive
+            // Swap directions[i] and directions[j]
             int[] temp = directions[i];
             directions[i] = directions[j];
             directions[j] = temp;
         }
     }
 
-    // Checks if the given cell is within the valid bounds of the world
     public boolean isValidCell(int x, int y) {
         return x > 0 && x < world.getSizeX() - 1 && y > 0 && y < world.getSizeY() - 1;
     }
 
-    // Counts the number of free spaces around a given cell
     public int amountOfFreeSpacesAround(int x, int y) {
         int amount = 0;
+
         int[][] directions = {
-                { -1, 0 }, { 1, 0 }, { 0, -1 }, { 0, 1 }
+                { -1, 0 }, // left
+                { 1, 0 }, // right
+                { 0, -1 }, // top
+                { 0, 1 } // bottom
         };
 
         for (int[] dir : directions) {
             int newX = x + dir[0];
             int newY = y + dir[1];
+
             if (newX >= 0 && newX < world.getSizeX() && newY >= 0 && newY < world.getSizeY()) {
                 if (!world.isTree(newX, newY)) {
                     amount++;
                 }
             }
         }
+
         return amount;
     }
 
-    // Starts the "Collect All Leaf" project
     public void Project_collectAllLeaf() {
-        kara.setPosition(0, 1);
-        int leafAmount = getLeafAmountFromUser();
-        if (leafAmount > 0) {
-            setupWorldWithBorders();
-            placeLeavesRandomly(leafAmount);
-            collectLeaves(leafAmount);
-        }
-    }
 
-    // Gets the number of leaves to collect from the user
-    private int getLeafAmountFromUser() {
+        kara.setPosition(0, 1);
+
         boolean done = false;
-        int leafAmount = 1; // Default value
+        int leafAmount = 0;
         while (!done) {
             try {
                 String input = tools.stringInput("How many leaves do you want to collect?\nDefault: 1").trim();
-                if (input.isEmpty()) {
+
+                leafAmount = Integer.parseInt(input);
+
+                if (leafAmount <= 0 || (leafAmount > (world.getSizeX() * (world.getSizeY() - 2)))) {
+                    throw new Exception("Invalid amount or input");
+                }
+
+                done = true;
+            } catch (Exception e) {
+                tools.showMessage(e.toString()); // debug
+                if (e.getMessage().contains("Invalid amount or input")) {
+                    tools.showMessage("Invalid amount given, please input a valid amount");
+                } else if (e instanceof NumberFormatException) {
                     leafAmount = 1;
+                    tools.showMessage("Using default amount: 1");
+                    done = true;
+                } else if (e instanceof NullPointerException) {
+                    tools.showMessage("No amount given -> Exiting...");
                     done = true;
                 } else {
-                    leafAmount = Integer.parseInt(input);
-                    if (isValidLeafAmount(leafAmount)) {
-                        done = true;
-                    } else {
-                        throw new Exception("Invalid amount or input");
-                    }
+                    tools.showMessage("Unexpected error: " + e.getMessage());
                 }
-            } catch (Exception e) {
-                handleLeafAmountInputError(e);
             }
         }
-        return leafAmount;
-    }
 
-    // Validates the leaf amount input by the user
-    private boolean isValidLeafAmount(int leafAmount) {
-        return leafAmount > 0 && leafAmount <= (world.getSizeX() * (world.getSizeY() - 2));
-    }
-
-    // Handles errors during leaf amount input parsing
-    private void handleLeafAmountInputError(Exception e) {
-        if (e.getMessage().contains("Invalid amount or input")) {
-            tools.showMessage("Invalid amount given, please input a valid amount");
-        } else if (e instanceof NumberFormatException) {
-            tools.showMessage("Using default amount: 1");
-        } else if (e instanceof NullPointerException) {
-            tools.showMessage("No amount given -> Exiting...");
-        } else {
-            tools.showMessage("Unexpected error: " + e.getMessage());
-        }
-    }
-
-    // Sets up the world borders with trees
-    private void setupWorldWithBorders() {
+        // world generation
         for (int i = 0; i < world.getSizeX(); i++) {
             world.setTree(i, 0, true);
             world.setTree(i, world.getSizeY() - 1, true);
         }
-        for (int j = 0; j < world.getSizeY(); j++) {
-            world.setTree(0, j, true);
-            world.setTree(world.getSizeX() - 1, j, true);
-        }
-    }
 
-    // Places leaves randomly in the world
-    private void placeLeavesRandomly(int leafAmount) {
         int placedLeaf = 0;
-        while (placedLeaf < leafAmount) {
+        do {
             int x = tools.random(world.getSizeX() - 1);
             int y = tools.random(world.getSizeY() - 1);
             if (world.isEmpty(x, y)) {
                 world.setLeaf(x, y, true);
                 placedLeaf++;
             }
-        }
-    }
+        } while (placedLeaf < leafAmount);
 
-    // Collects leaves based on the specified amount
-    private void collectLeaves(int leafAmount) {
-        int collectedLeaves = 0;
-        while (collectedLeaves < leafAmount) {
+        // execution
+        int collectedLeafs = 0;
+        while (collectedLeafs < leafAmount) {
             if (kara.onLeaf()) {
                 kara.removeLeaf();
-                collectedLeaves++;
-                tools.showMessage("Collected a leaf! Total collected: " + collectedLeaves);
+                collectedLeafs++;
             }
-            if (collectedLeaves >= leafAmount) {
+            if (collectedLeafs == leafAmount) {
                 tools.showMessage("Finished Collection");
                 break;
             }
-            moveKaraToNextLeaf();
-        }
-    }
-
-    // Moves Kara to the next leaf location
-    private void moveKaraToNextLeaf() {
-        // Example movement logic; customize as needed
-        if (!kara.treeFront()) {
-            kara.move();
-        } else {
-            kara.turnRight();
-            if (!kara.treeFront()) {
-                kara.move();
-            } else {
-                kara.turnLeft();
+            // given kara look rightwards
+            kara.turnRight(); // turn downwards
+            if (kara.onLeaf()) {
+                kara.removeLeaf();
+                collectedLeafs++;
+            }
+            if (collectedLeafs == leafAmount) {
+                tools.showMessage("Finished Collection");
+                break;
+            }
+            while (!kara.treeFront()) {
+                if (kara.onLeaf()) {
+                    kara.removeLeaf();
+                    collectedLeafs++;
+                }
+                if (collectedLeafs == leafAmount) {
+                    tools.showMessage("Finished Collection");
+                    break;
+                }
+                kara.move(); // moves until tree
+            }
+            if (kara.onLeaf()) {
+                kara.removeLeaf();
+                collectedLeafs++;
+            }
+            if (collectedLeafs == leafAmount) {
+                tools.showMessage("Finished Collection");
+                break;
+            }
+            kara.turnLeft(); // turn rightwards
+            if (kara.onLeaf()) {
+                kara.removeLeaf();
+                collectedLeafs++;
+            }
+            if (collectedLeafs == leafAmount) {
+                tools.showMessage("Finished Collection");
+                break;
+            }
+            kara.move(); // moves 1 step
+            if (kara.onLeaf()) {
+                kara.removeLeaf();
+                collectedLeafs++;
+            }
+            if (collectedLeafs == leafAmount) {
+                tools.showMessage("Finished Collection");
+                break;
+            }
+            kara.turnLeft(); // turn upwards
+            if (kara.onLeaf()) {
+                kara.removeLeaf();
+                collectedLeafs++;
+            }
+            if (collectedLeafs == leafAmount) {
+                tools.showMessage("Finished Collection");
+                break;
+            }
+            while (!kara.treeFront()) {
+                if (kara.onLeaf()) {
+                    kara.removeLeaf();
+                    collectedLeafs++;
+                }
+                if (collectedLeafs == leafAmount) {
+                    tools.showMessage("Finished Collection");
+                    break;
+                }
+                kara.move(); // moves until tree
+            }
+            if (kara.onLeaf()) {
+                kara.removeLeaf();
+                collectedLeafs++;
+            }
+            if (collectedLeafs == leafAmount) {
+                tools.showMessage("Finished Collection");
+                break;
+            }
+            kara.turnRight(); // turn right
+            if (kara.onLeaf()) {
+                kara.removeLeaf();
+                collectedLeafs++;
+            }
+            if (collectedLeafs == leafAmount) {
+                tools.showMessage("Finished Collection");
+                break;
+            }
+            kara.move(); // moves 1 step
+            if (kara.onLeaf()) {
+                kara.removeLeaf();
+                collectedLeafs++;
+            }
+            if (collectedLeafs == leafAmount) {
+                tools.showMessage("Finished Collection");
+                break;
             }
         }
     }
 
-    // Starts the "Collect Leaf If Tree is Left and Right" project
     public void Project_collectLeafIfTreeLeftRight() {
-        // TODO: Implement the "Collect Leaf If Tree is Left and Right" project
-        tools.showMessage("Project_collectLeafIfTreeLeftRight is not yet implemented.");
+
+        // TODO
     }
 }
