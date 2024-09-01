@@ -114,92 +114,24 @@ public class Main extends JavaKaraProgram {
     public void Project_maze() {
         // Manually set up the Maze world
         kara.setPosition(1, 1);
-
-        for (int i = 0; i < world.getSizeX(); i++) {
-            for (int j = 0; j < world.getSizeY(); j++) {
-                if (world.isEmpty(i, j)) {
-                    int treesAround = countTreesAround(i, j);
-                    int diagonalTreesAround = 0;
-                    for (int x = -1; x <= 1; x++) {
-                        for (int y = -1; y <= 1; y++) {
-                            if (Math.abs(x) == Math.abs(y)) {
-                                int ni = i + x;
-                                int nj = j + y;
-                                if (ni >= 0 && ni < world.getSizeX() && nj >= 0 && nj < world.getSizeY()) {
-                                    if (world.isTree(ni, nj)) {
-                                        diagonalTreesAround++;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    if (diagonalTreesAround == 0 || (diagonalTreesAround > 0 && treesAround > 1)) {
-                        if (treesAround <= 2 && tools.random(100) < 50) {
-                            world.setTree(i, j, true);
-                        }
-                    }
-                }
-            }
-        }
+//trycatch with while loop that stops wehn catched and places trees infinitely until catched(happend when no possible coordinate for a tree is found)
     }
-
-    // Helper method to count trees around a cell
-    private int countTreesAround(int i, int j) {
-        int count = 0;
-        int diagonalCount = 0;
-        for (int x = -1; x <= 1; x++) {
-            for (int y = -1; y <= 1; y++) {
-                if (x == 0 && y == 0)
-                    continue; // skip current cell
-                int ni = i + x;
-                int nj = j + y;
-                if (ni >= 0 && ni < world.getSizeX() && nj >= 0 && nj < world.getSizeY()) {
-                    if (world.isTree(ni, nj)) {
-                        if (Math.abs(x) == Math.abs(y)) {
-                            diagonalCount++; // increment diagonal count
-                        } else {
-                            count++; // increment direct neighbor count
-                        }
-                    }
-                }
-            }
-        }
-        return count + diagonalCount; // return total count
-    }
-
-    // Tree generation logic
-
-    // Example of setting trees and leaves manually
-    // world.setTree(2, 2, true);
-    // world.setTree(2, 3, true);
-    // world.setLeaf(3, 3, true);
-    // Add more elements to set up the maze as needed
-
-    // Additional logic for the maze project goes here
-
+   
     public void Project_collectAllLeaf() {
-        // Manually set up the Collect All Leaf world
+        
         kara.setPosition(1, 1);
 
-        // Example of setting trees and leaves manually
         world.setLeaf(2, 2, true);
         world.setLeaf(3, 3, true);
         world.setLeaf(4, 4, true);
-        // Add more leaves as needed
-
-        // Additional logic for collecting all leaves goes here
     }
 
     public void Project_collectLeafIfTreeLeftRight() {
-        // Manually set up the Collect Leaf If Tree is Left and Right world
+        
         kara.setPosition(1, 1);
-
-        // Example of setting trees and leaves manually
+        
         world.setTree(2, 2, true);
         world.setTree(2, 4, true);
         world.setLeaf(2, 3, true);
-        // Add more elements as needed
-
-        // Additional logic for this specific leaf collection goes here
     }
 }
