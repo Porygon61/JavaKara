@@ -22,7 +22,7 @@ HOW TO SETUP GIT with already existing repository
 
 
 
-HOW TO SETUP GIT locally
+HOW TO SETUP GIT locally (not recommended)
 
 0:go to folder of choice (cd) or create a new folder (mkdir)
 1: use 'git init'
