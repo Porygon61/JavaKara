@@ -389,7 +389,7 @@ public class Main extends JavaKaraProgram {
         //Execution
         int collectedLeafs =0;
         do {
-            if (kara.onLeaf()){
+            if (kara.onLeaf() && kara.treeRight() && kara.treeLeft()){
                 kara.removeLeaf();
                 collectedLeafs++;
             }else {
