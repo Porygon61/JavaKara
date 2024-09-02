@@ -359,7 +359,42 @@ public class Main extends JavaKaraProgram {
     }
 
     public void Project_collectLeafIfTreeLeftRight() {
+        int StartY = Math.round(world.getSizeY()/2);
+        kara.setPosition(0,StartY);
+        //World Generation
+        int topY = StartY -1;
+        int bottomY = StartY +1;
 
-        // TODO
+        for (int i = 0; i< world.getSizeX(); i++) {
+            int rnd = tools.random(10);
+            if (rnd <8) {
+                world.setTree(i,topY,true);
+            }
+         }
+
+        for (int j = 0; j < world.getSizeX(); j++) {
+            int rnd = tools.random(10);
+            if (rnd <8) {
+                world.setTree(i,bottomY,true);
+            }
+         }
+        int leafAmount = 0;
+        for (int l = 0; l < world.getSizeX(); l++) {
+            int rnd = tools.random(10);
+            if (rnd <6) {
+                world.setLeaf(i,StartY,true);
+                leafAmount++;
+            }
+         }
+        //Execution
+        int collectedLeafs =0;
+        do {
+            if (kara.onLeaf()){
+                kara.removeLeaf();
+                collectedLeafs++;
+            }else {
+                kara.move();
+            }
+        }while(collectedLeafs < leafAmount);
     }
 }
