@@ -63,10 +63,19 @@ public class Main extends JavaKaraProgram {
             case "Maze":
                 Project_maze();
                 break;
+            case "1":
+                Project_maze();
+                break;
             case "Collect All Leaf":
                 Project_collectAllLeaf();
                 break;
+            case "2":
+               Project_collectAllLeaf();
+               break;
             case "Collect Leaf If Tree is Left and Right":
+                Project_collectLeafIfTreeLeftRight();
+                break;
+            case "3":
                 Project_collectLeafIfTreeLeftRight();
                 break;
             default:
@@ -77,8 +86,11 @@ public class Main extends JavaKaraProgram {
 
     public String chooseProject() {
         String[] ProjectsArray = {
+                "1",
                 "Maze",
+                "2",
                 "Collect All Leaf",
+                "3",
                 "Collect Leaf If Tree is Left and Right"
         };
         String projectsList = String.join("\n", ProjectsArray);
@@ -88,7 +100,7 @@ public class Main extends JavaKaraProgram {
         while (!done) {
             try {
                 chosenProject = tools.stringInput(
-                        "Projects:\n" + projectsList + "\n" + "\n" +
+                        "Projects:\n\n" + projectsList + "\n" + "\n" +
                                 "Enter Project name to select:")
                         .trim();
 
@@ -125,18 +137,19 @@ public class Main extends JavaKaraProgram {
 
         int initialStartX = startX;
         int initialStartY = startY;
-
-        world.setTree(startX, startY, false);
-
+    
         generateMaze(startX, startY);
 
+        int leafAmount = 0;
+        
         kara.setPosition(initialStartX, initialStartY);
+        searchMaze(leafAmount);
     }
 
     public void generateMaze(int x, int y) {
         world.setTree(x, y, false);
 
-        // Define the possible directions to move (left, top, right, bottom)
+        // the possible directions(left, top, right, bottom)
         int[][] directions = {
                 { -2, 0 }, // left
                 { 2, 0 }, // right
@@ -156,6 +169,12 @@ public class Main extends JavaKaraProgram {
 
                 if (world.isTree(midX, midY) && world.isTree(newX, newY) && amountOfFreeSpacesAround(newX, newY) == 0) {
                     world.setTree(midX, midY, false);
+                    
+                    int rnd = tools.random(10);
+                        if (rnd <5) {
+                            world.setLeaf(midX,midY,true);
+                            leafAmount++;
+                        }
                     generateMaze(newX, newY);
                 }
             }
@@ -199,6 +218,30 @@ public class Main extends JavaKaraProgram {
         }
 
         return amount;
+    }
+    
+    public void searchMaze() {
+        tools.showMessage(Integer.toString(leafAmount));
+        leafAmount = 
+        int collectedLeafs = 0;
+        while (collectedLeafs < leafAmount) {
+            while (!kara.onLeaf()){
+                if (!kara.treeRight()) {
+	                kara.turnRight();
+                    kara.move();
+                } else if (!kara.treeLeft()) {
+                    kara.turnLeft();
+                    kara.move();
+                } else if (!kara.treeFront()) {
+                    kara.move();
+                } else if (kara.treeFront()) {
+                    kara.turnRight();
+                    kara.turnRight();
+                }
+            }
+            kara.removeLeaf();
+            collectedLeafs++;
+        }
     }
 
     public void Project_collectAllLeaf() {
@@ -375,14 +418,14 @@ public class Main extends JavaKaraProgram {
         for (int j = 0; j < world.getSizeX(); j++) {
             int rnd = tools.random(10);
             if (rnd <8) {
-                world.setTree(i,bottomY,true);
+                world.setTree(j,bottomY,true);
             }
          }
         int leafAmount = 0;
         for (int l = 0; l < world.getSizeX(); l++) {
             int rnd = tools.random(10);
             if (rnd <6) {
-                world.setLeaf(i,StartY,true);
+                world.setLeaf(l,StartY,true);
                 leafAmount++;
             }
          }
