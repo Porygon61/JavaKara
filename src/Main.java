@@ -3,7 +3,8 @@ package src;
 import javakara.JavaKaraProgram;
 
 import java.util.Arrays;
-import java.util.TooManyListenersException;
+import java.util.List;
+import java.util.ArrayList;
 
 public class Main extends JavaKaraProgram {
 
@@ -70,8 +71,8 @@ public class Main extends JavaKaraProgram {
                 Project_collectAllLeaf();
                 break;
             case "2":
-               Project_collectAllLeaf();
-               break;
+                Project_collectAllLeaf();
+                break;
             case "Collect Leaf If Tree is Left and Right":
                 Project_collectLeafIfTreeLeftRight();
                 break;
@@ -131,19 +132,21 @@ public class Main extends JavaKaraProgram {
                 world.setTree(x, y, true);
             }
         }
+        boolean loop = true;
+        int startX = 1;
+        int startY = 1;
+        while (loop) {
+            startX = tools.random(world.getSizeX() - 1);
+            startY = tools.random(world.getSizeY() - 1);
+            if ((startX == 1 || startX == world.getSizeX() - 2) && (startY == 1 || startY == world.getSizeY() - 2)) {
+                loop = false;
+            }
+        }
 
-        int startX = tools.random(world.getSizeX() - 1);
-        int startY = tools.random(world.getSizeY() - 1);
-
-        int initialStartX = startX;
-        int initialStartY = startY;
-    
         generateMaze(startX, startY);
 
-        int leafAmount = 0;
-        
-        kara.setPosition(initialStartX, initialStartY);
-        searchMaze(leafAmount);
+        kara.setPosition(checkAllCellsForX(), checkAllCellsForY());
+        searchMaze();
     }
 
     public void generateMaze(int x, int y) {
@@ -169,12 +172,11 @@ public class Main extends JavaKaraProgram {
 
                 if (world.isTree(midX, midY) && world.isTree(newX, newY) && amountOfFreeSpacesAround(newX, newY) == 0) {
                     world.setTree(midX, midY, false);
-                    
+
                     int rnd = tools.random(10);
-                        if (rnd <5) {
-                            world.setLeaf(midX,midY,true);
-                            leafAmount++;
-                        }
+                    if (rnd < 5) {
+                        world.setLeaf(midX, midY, true);
+                    }
                     generateMaze(newX, newY);
                 }
             }
@@ -219,29 +221,67 @@ public class Main extends JavaKaraProgram {
 
         return amount;
     }
-    
+
+    public int checkLeafAmount() {
+        int leafAmount = 0;
+        for (int y = 0; y < world.getSizeY(); y++) {
+            for (int x = 0; x < world.getSizeX(); x++) {
+                if (world.isLeaf(x, y)) {
+                    leafAmount++;
+                }
+            }
+        }
+        return leafAmount;
+    }
+
     public void searchMaze() {
-        tools.showMessage(Integer.toString(leafAmount));
-        leafAmount = 
+        int leafAmount = checkLeafAmount();
         int collectedLeafs = 0;
         while (collectedLeafs < leafAmount) {
-            while (!kara.onLeaf()){
-                if (!kara.treeRight()) {
-	                kara.turnRight();
+            while (!kara.onLeaf()) {
+
+                if (kara.treeRight() && !kara.treeFront()) {
                     kara.move();
-                } else if (!kara.treeLeft()) {
-                    kara.turnLeft();
-                    kara.move();
-                } else if (!kara.treeFront()) {
-                    kara.move();
+                } else if (!kara.treeRight()) {
+                    kara.turnRight();
+                    if (!kara.treeFront()) {
+                        kara.move();
+                    }
                 } else if (kara.treeFront()) {
-                    kara.turnRight();
-                    kara.turnRight();
+                    kara.turnLeft();
                 }
             }
             kara.removeLeaf();
             collectedLeafs++;
         }
+        tools.showMessage("Collected All (" + collectedLeafs + ") leafs");
+    }
+
+    public java.awt.Point[] checkAllCellsForEmptyCells() {
+        List<java.awt.Point> emptyCellsList = new ArrayList<>();
+        for (int y = 0; y < world.getSizeY(); y++) {
+            for (int x = 0; x < world.getSizeX(); x++) {
+                if (world.isEmpty(x, y)) {
+                    java.awt.Point point = new java.awt.Point(x, y);
+                    emptyCellsList.add(point);
+                }
+            }
+        }
+        java.awt.Point[] emptyCells = new java.awt.Point[emptyCellsList.size()];
+        emptyCellsList.toArray(emptyCells);
+        return emptyCells;
+    }
+
+    public int checkAllCellsForX() {
+        java.awt.Point[] emptyCells = checkAllCellsForEmptyCells();
+        int x = emptyCells[tools.random(emptyCells.length)].x;
+        return x;
+    }
+
+    public int checkAllCellsForY() {
+        java.awt.Point[] emptyCells = checkAllCellsForEmptyCells();
+        int y = emptyCells[tools.random(emptyCells.length)].y;
+        return y;
     }
 
     public void Project_collectAllLeaf() {
@@ -402,42 +442,42 @@ public class Main extends JavaKaraProgram {
     }
 
     public void Project_collectLeafIfTreeLeftRight() {
-        int StartY = Math.round(world.getSizeY()/2);
-        kara.setPosition(0,StartY);
-        //World Generation
-        int topY = StartY -1;
-        int bottomY = StartY +1;
+        int StartY = Math.round(world.getSizeY() / 2);
+        kara.setPosition(0, StartY);
+        // World Generation
+        int topY = StartY - 1;
+        int bottomY = StartY + 1;
 
-        for (int i = 0; i< world.getSizeX(); i++) {
+        for (int i = 0; i < world.getSizeX(); i++) {
             int rnd = tools.random(10);
-            if (rnd <8) {
-                world.setTree(i,topY,true);
+            if (rnd < 8) {
+                world.setTree(i, topY, true);
             }
-         }
+        }
 
         for (int j = 0; j < world.getSizeX(); j++) {
             int rnd = tools.random(10);
-            if (rnd <8) {
-                world.setTree(j,bottomY,true);
+            if (rnd < 8) {
+                world.setTree(j, bottomY, true);
             }
-         }
+        }
         int leafAmount = 0;
         for (int l = 0; l < world.getSizeX(); l++) {
             int rnd = tools.random(10);
-            if (rnd <6) {
-                world.setLeaf(l,StartY,true);
+            if (rnd < 6) {
+                world.setLeaf(l, StartY, true);
                 leafAmount++;
             }
-         }
-        //Execution
-        int collectedLeafs =0;
+        }
+        // Execution
+        int collectedLeafs = 0;
         do {
-            if (kara.onLeaf() && kara.treeRight() && kara.treeLeft()){
+            if (kara.onLeaf() && kara.treeRight() && kara.treeLeft()) {
                 kara.removeLeaf();
                 collectedLeafs++;
-            }else {
+            } else {
                 kara.move();
             }
-        }while(collectedLeafs < leafAmount);
+        } while (collectedLeafs < leafAmount);
     }
 }
