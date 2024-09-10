@@ -79,6 +79,18 @@ public class Main extends JavaKaraProgram {
             case "3":
                 Project_collectLeafIfTreeLeftRight();
                 break;
+            case "Pacman":
+                Project_pacman();
+                break;
+            case "4":
+                Project_pacman();
+                break;
+            case "Invert":
+                Project_invert();
+                break;
+            case "5":
+                Project_invert();
+                break;
             default:
                 // tools.showMessage("No project with such a name has been registered!");
                 break;
@@ -92,7 +104,11 @@ public class Main extends JavaKaraProgram {
                 "2",
                 "Collect All Leaf",
                 "3",
-                "Collect Leaf If Tree is Left and Right"
+                "Collect Leaf If Tree is Left and Right",
+                "4",
+                "Pacman",
+                "5",
+                "Invert"
         };
         String projectsList = String.join("\n", ProjectsArray);
 
@@ -480,4 +496,105 @@ public class Main extends JavaKaraProgram {
             }
         } while (collectedLeafs < leafAmount);
     }
+
+    public void Project_pacman() {
+
+    }
+
+    public void Project_invert() {
+        createTreeBorder();
+        for (int x = 1; x < world.getSizeX() - 1; x++) {
+            for (int y = 1; y < world.getSizeY() - 1; y++) {
+                if (tools.random(10) < 6) {
+                    world.setLeaf(x, y, true);
+                }
+            }
+        }
+        String automated = tools.stringInput("Let Kara Run? (y/n)");
+
+        switch (automated) {
+            case "y":
+                karaInverts();
+                break;
+            case "n":
+                invertLeafs();
+                break;
+        }
+    }
+
+    public void karaInverts() {
+        int removedLeafs = 0;
+        int placedLeafs = 0;
+        int Cells = (world.getSizeX() - 2) * (world.getSizeY() - 2);
+        kara.setPosition(1, 1);
+
+        while (removedLeafs + placedLeafs < Cells) {
+            if (kara.onLeaf()) {
+                kara.removeLeaf();
+                removedLeafs++;
+            } else {
+                kara.putLeaf();
+                placedLeafs++;
+            }
+
+            if (kara.treeFront()) {
+                if (world.isTree(kara.getPosition().x + 1, kara.getPosition().y)) { // rechts neben kara
+                    kara.turnRight();
+                } else if (world.isTree(kara.getPosition().x - 1, kara.getPosition().y)) { // links neben kara
+                    kara.turnLeft();
+                }
+                if (kara.treeLeft()) {
+                    if (kara.treeFront()) {
+                        break;
+                    }
+                    kara.move();
+                    kara.turnRight();
+                } else if (kara.treeRight()) {
+                    if (kara.treeFront()) {
+                        break;
+                    }
+                    kara.move();
+                    kara.turnLeft();
+                }
+            } else {
+                kara.move();
+            }
+        }
+        tools.showMessage("Finished! --> removed " + removedLeafs + " Leafs / placed " + placedLeafs + " Leafs");
+    }
+
+    public void createTreeBorder() {
+        for (int x = 0; x < world.getSizeX(); x++) {
+            world.setTree(x, 0, true);
+        }
+        for (int x = 0; x < world.getSizeX(); x++) {
+            world.setTree(x, world.getSizeY() - 1, true);
+        }
+        for (int y = 1; y < world.getSizeY(); y++) {
+            world.setTree(0, y, true);
+        }
+        for (int y = 1; y < world.getSizeY(); y++) {
+            world.setTree(world.getSizeX() - 1, y, true);
+        }
+    }
+
+    public void invertLeafs() {
+        int removedLeafs = 0;
+        int placedLeafs = 0;
+        for (int x = 1; x < world.getSizeX() - 1; x++) {
+            for (int y = 1; y < world.getSizeY() - 1; y++) {
+
+                if (world.isLeaf(x, y)) {
+                    world.setLeaf(x, y, false);
+                    removedLeafs++;
+                } else {
+                    world.setLeaf(x, y, true);
+                    placedLeafs++;
+                }
+
+            }
+        }
+        tools.showMessage("Finished! --> removed " + removedLeafs + " Leafs / placed " + placedLeafs + " Leafs");
+    }
+
 }
