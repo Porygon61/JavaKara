@@ -498,7 +498,77 @@ public class Main extends JavaKaraProgram {
     }
 
     public void Project_pacman() {
+        for (int x = 0; x < world.getSizeX(); x++) {
+            for (int y = 0; y < world.getSizeY(); y++) {
+                world.setTree(x, y, true);
+            }
+        }
 
+        boolean loop = true;
+        int startX = 1;
+        int startY = 1;
+        while (loop) {
+            startX = tools.random(world.getSizeX() - 1);
+            startY = tools.random(world.getSizeY() - 1);
+            if ((startX == 1 || startX == world.getSizeX() - 2) && (startY == 1 || startY == world.getSizeY() - 2)) {
+                loop = false;
+            }
+        }
+
+        int pathLength = Integer.parseInt(tools.stringInput("Path Length: "));
+        int karaX = startX;
+        int karaY = startY;
+        generatePath(karaX, karaY, pathLength);
+
+        kara.setPosition(karaX, karaY);
+        followPath();
+    }
+
+    public void generatePath(int x, int y, int length) {
+        world.setTree(x, y, false);
+
+        // the possible directions(left, top, right, bottom)
+        int[][] directions = {
+                { -2, 0 }, // left
+                { 2, 0 }, // right
+                { 0, -2 }, // top
+                { 0, 2 } // bottom
+        };
+
+        randomizeDirections(directions);
+
+        for (int[] dir : directions) {
+            int newX = x + dir[0];
+            int newY = y + dir[1];
+
+            if (isValidCell(newX, newY)) {
+                int midX = (x + newX) / 2;
+                int midY = (y + newY) / 2;
+
+                if (world.isTree(midX, midY) && world.isTree(newX, newY) && amountOfFreeSpacesAround(newX, newY) == 0) {
+                    world.setTree(midX, midY, false);
+                    world.setLeaf(midX, midY, true);
+                    world.setLeaf(x, y, true);
+
+                    if (length > 0) {
+                        length--;
+                        generatePath(newX, newY, length);
+                    } else {
+                        for (int i = 0; i < world.getSizeX(); i++) {
+                            for (int j = 0; j < world.getSizeY(); j++) {
+                                if (world.isTree(i, j)) {
+                                    world.setTree(i, j, false);
+                                }
+                            }
+                        }
+                        world.setTree(newX, newY, true);
+                    }
+                }
+            }
+        }
+    }
+
+    public void followPath() {
     }
 
     public void Project_invert() {
